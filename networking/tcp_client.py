@@ -12,7 +12,8 @@ client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((host, port))
 
 # send stuff
-# this doesn't have to be http
 stuff = raw_input("SEND: ")
 client.send(stuff)
+
+# anything more than 4096 will be truncated
 print client.recv(4096)
