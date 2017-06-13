@@ -40,7 +40,7 @@ class net_tool(object):
             elif o in ('-u', '--upload'):
                 self.upload_dir = a
             elif o in ('-t', '--target'):
-                self.target = a
+                self.target = str(a)
             elif o in ('-p', '--port'):
                 self.port = int(a)
             else:
@@ -49,8 +49,61 @@ class net_tool(object):
     def listener(self):
         "Starts the tool in listening mode"
 
-    def sender(self):
+    def sender(self, buffer=''):
         "Sends data to the target and port"
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        try:
+            if self.target is not None and self.port is not 0:
+                client.connect((self.target, self.port))
+            else:
+                print "target:{0} or port:{1} malformed".format(
+                    self.target, self.port)
+        except:
+            print "target:{0} or port:{1} malformed".format(
+                self.target, self.port)
+            sys.exit("Connection to target Failed, check IP and Port")
+
+        # check for stdin input
+        if buffer == '':
+            buffer = sys.stdin.read()
+
+        try:
+            if len(buffer):
+                client.send(buffer)
+
+            while True:
+                response = ''
+
+                # get all of the data from the buffer
+                while True:
+                    resp = client.recv(4096)
+                    response += resp
+
+                    if len(resp) < 4096:
+                        break
+
+                print response,
+
+                # accept more user input
+                buffer = raw_input("")
+                buffer += "\n"
+
+                client.send(buffer)
+        except:
+            client.close()
+            sys.exit("FAILED Sending: {0}".format(buffer))
 
     def run_command(self, command):
         "Runs a command on the remote computer"
+
+
+nc = net_tool()
+if len(sys.argv) > 1:
+    nc.setup()
+    print "Setting up using command line args"
+else:
+    nc.target = str(raw_input("Enter target: "))
+    nc.port = int(raw_input("Enter port: "))
+
+nc.sender()
