@@ -21,13 +21,17 @@ print 'Port: {0}'.format(bind_port)
 
 def handle_client(client_socket):
     # print what the client says
-    data = client_socket.recv(1024)
-    print data
 
-    # reply to the client
-    client_socket.send("ACK :{0}".format(data))
+    while True:
+        data = client_socket.recv(1024)
+        if not data:
+            client_socket.close()
+            break
+        else:
+            # reply to the client
+            client_socket.send("ACK : {0}".format(data))
+            print data,
 
-    client_socket.close()
 
 # main server loop
 while True:
@@ -41,5 +45,5 @@ while True:
     print 'Port: {0}'.format(addr[1])
 
     # give the client a thread
-    client_handler = threading.Thread(target=handle_client, args=(client,))
-    client_handler.start()
+    client_thread = threading.Thread(target=handle_client, args=(client,))
+    client_thread.start()
