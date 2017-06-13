@@ -1,10 +1,11 @@
 import socket
 
 
-host = "www.google.com"
-port = 80
+host = "0.0.0.0"
+port = 9999
 
 # create the socket object
+# SOCK_STREAM denotes TCP connections
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # connect to the client
@@ -12,6 +13,6 @@ client.connect((host, port))
 
 # send stuff
 # this doesn't have to be http
-client.send("GET / HTTP/1.1\r\n\Host: google.com\r\n\r\n")
-
+stuff = raw_input("SEND: ")
+client.send(stuff)
 print client.recv(4096)
