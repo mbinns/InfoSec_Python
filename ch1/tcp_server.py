@@ -25,7 +25,7 @@ def handle_client(client_socket):
     print data
 
     # reply to the client
-    client_socket.send("ACK!")
+    client_socket.send("ACK :{0}".format(data))
 
     client_socket.close()
 
