@@ -86,7 +86,7 @@ class net_tool(object):
                 print response,
 
                 # accept more user input
-                buffer = raw_input("")
+                buffer = raw_input("Send: ")
                 buffer += "\n"
 
                 client.send(buffer)
