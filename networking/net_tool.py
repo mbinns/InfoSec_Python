@@ -1,4 +1,5 @@
 import sys
+import os
 import socket
 import getopt
 import threading
@@ -25,7 +26,7 @@ class net_tool(object):
                                        ["help", "listen", "target", "port",
                                         "command", "upload"])
         except getopt.GetoptError as e:
-            print str(e)
+            print
 
         # checks and sets arguments
         for o, a in opts:
@@ -65,8 +66,11 @@ class net_tool(object):
             sys.exit("Connection to target Failed, check IP and Port")
 
         # check for stdin input
-        if buffer == '':
+        if not sys.stdin.isatty():
             buffer = sys.stdin.read()
+        else:
+            buffer = raw_input("")
+            buffer += "\n"
 
         try:
             if len(buffer):
@@ -74,36 +78,132 @@ class net_tool(object):
 
             while True:
                 response = ''
+                recv_len = 1
 
                 # get all of the data from the buffer
-                while True:
+                while recv_len:
                     resp = client.recv(4096)
+                    recv_len = len(resp)
                     response += resp
 
-                    if len(resp) < 4096:
+                    if recv_len < 4096:
                         break
 
                 print response,
 
                 # accept more user input
-                buffer = raw_input("Send: ")
-                buffer += "\n"
+                try:
+                    buffer = raw_input("")
+                except EOFError:
+                    sys.stdin = open('/dev/tty')
+                    buffer = raw_input("")
 
+                buffer += '\n'
                 client.send(buffer)
-        except:
+        except Exception as e:
+            print '\n' + str(e)
             client.close()
             sys.exit("FAILED Sending: {0}".format(buffer))
+        except KeyboardInterrupt:
+            client.close()
 
-    def run_command(self, command):
-        "Runs a command on the remote computer"
+    def server_loop(self):
+        "Setting up the listening portion of the server"
+        if self.target is None:
+            print 'Setting target to 0.0.0.0'
+            self.target ="0.0.0.0"
 
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind((self.target, self.port))
 
-nc = net_tool()
-if len(sys.argv) > 1:
-    nc.setup()
-    print "Setting up using command line args"
-else:
-    nc.target = str(raw_input("Enter target: "))
-    nc.port = int(raw_input("Enter port: "))
+        server.listen(5)
 
-nc.sender()
+        while True:
+            client_socket, addr = server.accept()
+
+            client_thread = threading.Thread(target=self.client_handler, args=(
+                client_socket,))
+            client_thread.start()
+
+    def run_command(self, command=''):
+        """Runs a command on the remote server and sends the results back
+        Returns: command output"""
+
+        # removes the newline
+        command = command.rstrip()
+
+        # run it
+        try:
+            output = subprocess.check_output(command, stderr=subprocess.STDOUT,
+                                           shell=True)
+        except:
+            output = 'Failed to run command: {0}.\r\n'.format(command)
+
+        return output
+
+    def client_handler(self, client_socket):
+        "Handles incoming connections to the server"
+        # checks to see if the program is supposed to upload a file
+        if len(self.upload_dir):
+            file_buffer = ''
+
+            # reads in data until there is none available
+            while True:
+                resp = client_socket.recv(1024)
+
+                if not resp:
+                    break
+                else:
+                    file_buffer += resp
+
+            # write data to the remote server
+            try:
+                fd = open(self.upload_dir, "wb")
+                fd.write(file_buffer)
+                fd.close()
+
+                # Tell the sender that the file was written
+                client_socket.send("SUCCESS: File was written to: {0}\n".format(
+                    self.upload_dir))
+            except:
+                client_socket.send("FAILURE: File was not written to: {0}\n"
+                                   .format(self.upload_dir))
+
+        # executes commands on the remote server
+        if self.command:
+            while True:
+                # show a prompt
+                try:
+                    client_socket.send("MACK:#> ")
+
+                    # recieve until enter is pressed
+                    cmd_buffer = client_socket.recv(1024)
+                    if cmd_buffer:
+                        resp = self.run_command(cmd_buffer)
+                        client_socket.send(resp)
+
+                except KeyboardInterrupt:
+                    client_socket.send("Server shutting down...")
+                    sys.exit(0)
+
+def main():
+    nc = net_tool()
+    if len(sys.argv) > 1:
+        nc.setup()
+        print "Setting up using command line args"
+    else:
+        nc.target = str(raw_input("Enter target: "))
+        nc.port = int(raw_input("Enter port: "))
+
+    if nc.listen:
+        nc.server_loop()
+    else:
+        print 'sending commands'
+        nc.sender()
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print 'Shutting Down...'
+        sys.exit(0)
