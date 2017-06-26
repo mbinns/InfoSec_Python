@@ -73,6 +73,10 @@ class net_tool(object):
             buffer += "\n"
 
         try:
+            if buffer == "quit()\n":
+                client.close()
+                quit()
+
             if len(buffer):
                 client.send(buffer)
 
@@ -174,7 +178,6 @@ class net_tool(object):
             while True:
                 # show a prompt
                 try:
-
                     # recieve until enter is pressed
                     cmd_buffer = client_socket.recv(1024)
                     if cmd_buffer:
@@ -201,6 +204,7 @@ def main():
         nc.server_loop()
     else:
         print 'sending commands'
+        print 'MACK:#>',
         nc.sender()
 
 if __name__ == "__main__":
