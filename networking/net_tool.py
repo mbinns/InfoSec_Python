@@ -1,5 +1,5 @@
 import sys
-import os
+import errno
 import socket
 import getopt
 import threading
@@ -26,8 +26,7 @@ class net_tool(object):
                                        ["help", "listen", "target", "port",
                                         "command", "upload"])
         except getopt.GetoptError as e:
-            print
-
+            print e
         # checks and sets arguments
         for o, a in opts:
             if o in ('-h', '--help'):
@@ -68,6 +67,13 @@ class net_tool(object):
         # check for stdin input
         if not sys.stdin.isatty():
             buffer = sys.stdin.read()
+            if len(buffer):
+                client.send(buffer)
+
+            resp = client.recv(4096)
+            print resp
+            client.close()
+            sys.exit()
         else:
             buffer = raw_input("")
             buffer += "\n"
@@ -111,7 +117,7 @@ class net_tool(object):
         "Setting up the listening portion of the server"
         if self.target is None:
             print 'Setting target to 0.0.0.0'
-            self.target ="0.0.0.0"
+            self.target = "0.0.0.0"
 
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind((self.target, self.port))
@@ -135,7 +141,7 @@ class net_tool(object):
         # run it
         try:
             output = subprocess.check_output(command, stderr=subprocess.STDOUT,
-                                           shell=True)
+                                             shell=True)
         except:
             output = 'Failed to run command: {0}.\r\n'.format(command)
 
@@ -186,6 +192,10 @@ class net_tool(object):
                 except KeyboardInterrupt:
                     client_socket.send("Server shutting down...")
                     sys.exit(0)
+                except socket.error as e:
+                    if e.errno == errno.EPIPE:
+                        print 'Client Disconnected'
+                        break
 
 
 def main():
