@@ -75,6 +75,7 @@ class net_tool(object):
             client.close()
             sys.exit()
         else:
+            print 'MACK:#>',
             buffer = raw_input("")
             buffer += "\n"
 
@@ -213,8 +214,6 @@ def main():
     if nc.listen:
         nc.server_loop()
     else:
-        print 'sending commands'
-        print 'MACK:#>',
         nc.sender()
 
 if __name__ == "__main__":
