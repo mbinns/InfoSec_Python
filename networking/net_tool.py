@@ -174,17 +174,19 @@ class net_tool(object):
             while True:
                 # show a prompt
                 try:
-                    client_socket.send("MACK:#> ")
 
                     # recieve until enter is pressed
                     cmd_buffer = client_socket.recv(1024)
                     if cmd_buffer:
                         resp = self.run_command(cmd_buffer)
-                        client_socket.send(resp)
+                        client_socket.send(resp + "MACK:#>")
+                    else:
+                        client_socket.send("MACK:#> ")
 
                 except KeyboardInterrupt:
                     client_socket.send("Server shutting down...")
                     sys.exit(0)
+
 
 def main():
     nc = net_tool()
