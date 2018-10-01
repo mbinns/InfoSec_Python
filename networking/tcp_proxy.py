@@ -9,9 +9,9 @@ class Proxy2Server(Thread):
         super(Proxy2Server, self).__init__()
         # client is defined in Local2Proxy and will be exchanged with this
         # object
-        self.client = None
-        self.port = port
         self.host = host
+        self.port = port
+        self.client = None
 
         # create socket for server connection
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -40,13 +40,13 @@ class Local2Proxy(Thread):
     def __init__(self, host, port):
         super(Local2Proxy, self).__init__()
 
+        # client connection information
+        self.host = host
+        self.port = port
+
         # server is unknown currently
         # will get server from the Proxy2Server class
         self.server = None
-
-        # client connection information
-        self.port = port
-        self.host = host
 
         # create socket
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
