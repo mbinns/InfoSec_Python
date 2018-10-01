@@ -85,12 +85,10 @@ class Local2Proxy(Thread):
 
 
 class Proxy(Thread):
-    def __init__(self, local_host, remote_host, local_port, remote_port):
+    def __init__(self, local, remote):
         super(Proxy, self).__init__()
-        self.local_host = local_host
-        self.remote_host = remote_host
-        self.local_port = local_port
-        self.remote_port = remote_port
+        self.local_host, self.local_port = local
+        self.remote_host, self.remote_port = remote
 
     def run(self):
         while True:
@@ -129,7 +127,7 @@ def main():
     remote_port = int(sys.argv[4])
 
     # Start proxy
-    master_server = Proxy(local_host, remote_host, local_port, remote_port)
+    master_server = Proxy((local_host, local_port), (remote_host, remote_port))
     master_server.start()
 
     # capture 'quit' and ctrl-c to exit program
